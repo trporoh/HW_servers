@@ -9,7 +9,7 @@
 #include <sys/time.h>
 
 #define addr "127.0.0.1"
-#define port 7782zz
+#define port "9990"
 
 int main(int args, char** argv) {
 
@@ -18,11 +18,9 @@ int main(int args, char** argv) {
 	char* received_msg = (char*)malloc(256);
 	char* sended_msg = "Hello, im a client";
 
-	short int* addrport;
-	int* received_time;
-	int hour, min, sec;
+	short* addrport;
 
-	struct sockaddr_in server;
+	struct sockaddr_in server, subserver;
 
 	socklen_t length;
 
@@ -34,29 +32,25 @@ int main(int args, char** argv) {
 
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = inet_addr(addr);
-	server.sin_port = htons(port);
+	server.sin_port = htons(atoi(port));
 
 	sendto(request_fd, sended_msg, strlen(sended_msg), 0, (struct sockaddr*)&server, sizeof(struct sockaddr_in));
 
 	printf("Waiting for massege...\n");
-	recvfrom(request_fd, received_msg, strlen(received_msg), 0, (struct sockaddr*)&server, sizeof(struct sockaddr_in));
-	printf("Massege received\n");
+	memset(&subserver, '\0', sizeof(subserver));
+	recvfrom(request_fd, received_msg, sizeof(received_msg), 0, (struct sockaddr*)&server, sizeof(struct sockaddr_in));
 
 	addrport = received_msg;
-	server.sin_port = *addrport;
+
+	printf("Massege received: %d\n", *addrport);
+
+	server.sin_port = htons(*addrport);
 
 	sendto(request_fd, sended_msg, strlen(sended_msg), 0, (struct sockaddr*)&server, sizeof(struct sockaddr_in)); //отправили сообщение для подтверждения соединения на новый порт
 
-	recvfrom(request_fd, received_msg, sizeof(received_msg), 0, (struct sockaddr*)&server, sizeof(struct sockaddr_in)); // получение строки времени
-	
-	received_time = received_msg;
-	hour = (int)*received_time;
-	received_time++;
-	min = (int)*received_time;
-	received_time++;
-	sec = (int)*received_time;
+	recvfrom(request_fd, received_msg, 256, 0, (struct sockaddr*)&server, sizeof(struct sockaddr_in)); // получение строки времени
 
-	printf("Time is: %d:%d:%d\n", hour, min,sec);
+	printf("Time is: %s\n", received_msg);
 
 	exit(EXIT_SUCCESS);
 }
